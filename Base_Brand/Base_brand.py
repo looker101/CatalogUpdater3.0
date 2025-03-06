@@ -59,7 +59,7 @@ class BaseBrand:
         """Don't show products with €0 price"""
 
         def remove_products_0_quantity(row):
-            if row["Variant Price"] in [0, 7]:
+            if row["Variant Price"] in [0, 7] or pd.isna(row["Variant Price"]):
                 return 0
             return row["Inventory Available: +39 05649689443"]
 
