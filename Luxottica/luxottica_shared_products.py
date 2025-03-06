@@ -48,6 +48,12 @@ def luxottica_shared_products():
     # ALLA COLONNA FOR WHO ASSEGNO LO STESSO VALORE DELLA COLONNA GENDER DEL FILE LUXOTTICA
     shared_file["Metafield: my_fields.for_who [single_line_text_field]"] = shared_file["Gender"]
 
+    # REMOVE USELESS TYPES
+    mask_type = shared_file["Type_looker"].isin([
+        "Sunglasses", "Eyeglasses", "Sunglasses Kids", "Eyeglasses Kids", "Ski & Snowboard Goggles"
+    ])
+    shared_file = shared_file[mask_type]
+
     # VENDOR -> LASCIARE SOLO IL NOME DEL BRAND IN TITLE()
     # RIMUOVERE TUTTO IL SUPERFLUO (KIDS, FRAME, JUNIOR)
     def get_vendor_eq_brand(row):
