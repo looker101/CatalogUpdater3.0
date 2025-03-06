@@ -1,0 +1,10 @@
+# STORE BACKUP
+FTP_FIRST_PART = "/var/www/vhosts/lookeronline.com/staging.lookeronline.com/script"
+LUXOTTICA = f"{FTP_FIRST_PART}/Catalog/Brand_backup/Luxottica.xlsx"
+DERIGO = f"{FTP_FIRST_PART}/Catalog/Brand_backup/DeRigo.xlsx"
+KERING = f"{FTP_FIRST_PART}/Catalog/Brand_backup/Kering.xlsx"
+MARCHON = f"{FTP_FIRST_PART}/Catalog/Brand_backup/Marchon.xlsx"
+MARCOLIN = f"{FTP_FIRST_PART}/Catalog/Brand_backup/Marcolin.xlsx"
+SAFILO = f"{FTP_FIRST_PART}/Catalog/Brand_backup/Safilo.xlsx"
+RSF = f"{FTP_FIRST_PART}/Catalog/Brand_backup/retro.xlsx"
+LOGS_FOLDER = f"{FTP_FIRST_PART}/logs"
