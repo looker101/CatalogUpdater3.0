@@ -28,8 +28,65 @@ def luxottica_shared_products():
     # WHOLESALE PRICE And RETAIL PRICE(VARIANT COMPARE AT PRICE)
     # LASCIA VUOTA LA COLONNA DEL VARIANT PRICE
     shared_file["Variant Cost"] = shared_file["Wholesale Price"]
-    shared_file["Variant Compare At Price"] == shared_file["Suggested Retail Price"]
+
+    # CORRETTA FORMATTAZIONE PREZZO
+    def get_correct_format_prices(row):
+        value = row["Suggested Retail Price"]
+        if isinstance(value, str):
+            value = value.strip()  # Rimuove spazi iniziali e finali
+            value = value.replace(".", "")  # Rimuove i punti delle migliaia
+            value = value.replace(",", ".")  # Sostituisce la virgola con il punto decimale
+            try:
+                return float(value)  # Converte in float
+            except ValueError:
+                return None  # Se la conversione fallisce, restituisce None
+        return float(value)  # Se è già numero, lo lascia invariato
+
+    # Applica la funzione alla colonna
+    shared_file["Variant Compare At Price"] = shared_file.apply(get_correct_format_prices, axis=1)
+
     shared_file["Variant Price"] = ""
+
+    # SET ITEMS TITLE
+    def get_items_title(row):
+        brand = row["Brand Name"].title()
+        if row["Model Code"].startswith("0"):
+            model_code = row["Model Code"].replace("0", "", 1)
+        else:
+            model_code = row["Model Code"].replace("A", "", 1)
+        color_code = row["Color Code"]
+        if pd.notna(row["Model Name Description"]):
+            product_name = row["Model Name Description"].title()
+            return f"{brand} {product_name} {model_code} {color_code}"
+        else:
+            return f"{brand} {model_code} {color_code}"
+    shared_file["Title"] = shared_file.apply(get_items_title, axis = 1)
+
+    # GET VENDOR
+    def shopify_vendor(row):
+        if row["Vendor"] == "Oakley frame" or row["Vendor"] == "Oakley youth rx" or row[
+            "Vendor"] == "Oakley youth sun" or row["Vendor"] == "Oakley Frame" or row["Vendor"] == "Oakley Youth Rx" or \
+                row[
+                    "Vendor"] == "Oakley Youth Sun":
+            return "Oakley"
+        elif row["Vendor"] == "Ray-ban junior vista" or row["Vendor"] == "Ray-ban vista" or row[
+            "Vendor"] == "Ray-Ban Junior" or row["Vendor"] == "Ray-Ban Vista" or row[
+            "Vendor"] == "Ray-Ban Junior Vista":
+            return "Ray-Ban"
+        elif row["Vendor"] == "Goggle&acc  snow" and row["Brand Code"] == "OZ":
+            return "Oakley"
+        elif row["Vendor"] == "Dolce & Gabbana Kids":
+            return "Dolce & Gabbana"
+        elif row["Vendor"] == "Emporio Armani Kids":
+            return "Emporio Armani"
+        elif row["Vendor"] == "Burberry Kids":
+            return "Burberry"
+        elif row["Vendor"] == "Vogue Junior Sun" or row["Vendor"] == "Vogue Junior Ophthal" or row["Vendor"] == "Vogue":
+            return "Vogue Eyewear"
+        elif row["Vendor"] == "Versace Kids":
+            return "Versace"
+        return row["Vendor"]
+    shared_file["Vendor"] = shared_file.apply(shopify_vendor, axis = 1)
 
     # FRAME SHAPE
     shared_file["Metafield: my_fields.frame_shape [single_line_text_field]"] = shared_file["Shape"]
@@ -39,6 +96,7 @@ def luxottica_shared_products():
         "Variant Inventory Qty", "Inventory Available: +39 05649689443"
     ]] = 5
 
+    # REPLACE , WITH . -> NOW WE CAN WORK ON EXCEL
     shared_file["Variant Cost"] = shared_file["Variant Cost"].str.strip().str.replace(',', '.')
     shared_file["Vendor"] = shared_file["Vendor"].str.title()
 
@@ -53,11 +111,6 @@ def luxottica_shared_products():
         "Sunglasses", "Eyeglasses", "Sunglasses Kids", "Eyeglasses Kids", "Ski & Snowboard Goggles"
     ])
     shared_file = shared_file[mask_type]
-
-    # VENDOR -> LASCIARE SOLO IL NOME DEL BRAND IN TITLE()
-    # RIMUOVERE TUTTO IL SUPERFLUO (KIDS, FRAME, JUNIOR)
-    def get_vendor_eq_brand(row):
-        pass
 
     # KEEPP COLUMNS
     column_to_keep = [
@@ -94,20 +147,6 @@ def luxottica_shared_products():
             return "Kids"
         return gender
     shared_file["Metafield: my_fields.for_who [single_line_text_field]"] = shared_file.apply(get_kids_category, axis=1)
-
-
-    # # Type -> If for kids, return Kids on Type
-    # def get_kids_on_type(row):
-    #     items_for_who = str(row["Metafield: my_fields.for_who [single_line_text_field]"]).strip().title()
-    #     items_type = str(row["Type"]).strip().title()
-    #     if pd.notna(items_for_who):
-    #         if items_for_who == "Kids" and items_type == "Sunglasses":
-    #             return "Sunglasses Kids"
-    #         elif items_for_who == "Kids" and items_type == "Eyeglasses":
-    #             return "Eyeglasses Kids"
-    #         return row["Type"]
-    #
-    # shared_file["Type"] = shared_file.apply(get_kids_on_type, axis=1)
 
     # ========================================= MAIN VALUES =========================================
 
