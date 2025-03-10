@@ -67,7 +67,8 @@ def luxottica_shared_products():
             return "Vogue Eyewear"
         return row["Brand Name"]
 
-    shared_file["Vendor"] = shared_file.apply(get_main_brand, axis=1)
+    shared_file["Brand Name"] = shared_file.apply(get_main_brand, axis=1)
+    shared_file["Vendor"] = shared_file["Brand Name"]
 
     # SET ITEMS TITLE
     def get_items_title(row):
