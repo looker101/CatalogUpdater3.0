@@ -10,46 +10,68 @@ from luxottica_colors_and_frames_mapping import lux_lens_colors, lux_frame_color
     luxottica_frame_shape
 
 
+# READING EXCEL FILES
 def luxottica_shared_products():
-    # Read Luxottica Item Master Catalogue
-    # Read Luxottica-Shopify backup
     luxottica_file = pd.read_excel(luxottica_item_master)
     shopify = pd.read_excel(luxottica_backup)
 
-    # Merge dataframe how inner join
-    shared_file = shopify.merge(luxottica_file,
-                                how="inner",
-                                left_on="Variant Barcode",
-                                right_on="UPC",
-                                suffixes=("_looker", "_lux"),
-                                indicator=True)
+    # PRIMA DI FARE IL MERGE, FILTRA ITEM MASTER DATA PER LE CATEGORIE NECESSARIE
+    luxottica_file = luxottica_file[luxottica_file["Collection"].isin([
+        "Sunglasses", "Eyeglasses", "Sunglasses Kids", "Eyeglasses Kids", "Goggles&Helmets"
+    ])]
+    luxottica_file["Collection"] = luxottica_file["Collection"].str.replace("Goggles&Helmets",
+                                                                            "Ski & Snowboard Goggles")
 
-    # Genrazione dei prezzi
-    # WHOLESALE PRICE And RETAIL PRICE(VARIANT COMPARE AT PRICE)
-    # LASCIA VUOTA LA COLONNA DEL VARIANT PRICE
-    shared_file["Variant Cost"] = shared_file["Wholesale Price"]
+    # REPLACE "GOGGLE&ACC  SNOW" NAME BRAND WITH OAKLEY
+    luxottica_file["Brand Name"] = luxottica_file["Brand Name"].str.replace("GOGGLE&ACC  SNOW", "OAKLEY")
+    luxottica_file["Brand Name"] = luxottica_file["Brand Name"].str.strip().str.title()
 
-    # CORRETTA FORMATTAZIONE PREZZO
-    def get_correct_format_prices(row):
-        value = row["Suggested Retail Price"]
-        if isinstance(value, str):
-            value = value.strip()  # Rimuove spazi iniziali e finali
-            value = value.replace(".", "")  # Rimuove i punti delle migliaia
-            value = value.replace(",", ".")  # Sostituisce la virgola con il punto decimale
-            try:
-                return float(value)  # Converte in float
-            except ValueError:
-                return None  # Se la conversione fallisce, restituisce None
-        return float(value)  # Se è già numero, lo lascia invariato
+    shared_file = shopify.merge(
+        luxottica_file,
+        left_on="Variant Barcode",
+        right_on="UPC",
+        how="inner",
+        suffixes=("_looker", "_lux"),
+        indicator=True
+    )
 
-    # Applica la funzione alla colonna
-    shared_file["Variant Compare At Price"] = shared_file.apply(get_correct_format_prices, axis=1)
+    # =============================================== BRANDS NAME AND ITEMS TYPE =======================================
+    # GET KIDS CATEGORIES FROM LUXOTTICA BRAND NAME E.G. BURBERRY KIDS
+    # IF KIDS, YOUTH, JUNIOR IN BRAND NAME, GENDER WILL BE KIDS
+    def get_kids_gender(row):
+        brand_name = str(row["Brand Name"]).strip().lower()
+        kids_category = ["kids", "youth", "junior"]
+        for category in kids_category:
+            if category in brand_name:
+                return "Kids"
+        return row["Gender"]
 
-    shared_file["Variant Price"] = ""
+    shared_file["Metafield: my_fields.for_who [single_line_text_field]"] = shared_file.apply(get_kids_gender, axis=1)
+
+    # FROM BRANND NAME COLUMN, REMOVE USELESS NAME AS KIDS, FRAME OR SOMETHING LIKE THIS
+    def get_main_brand(row):
+        luxottica_brand_name = str(row["Brand Name"]).strip().lower()
+        if luxottica_brand_name == "burberry kids":
+            return "Burberry"
+        elif luxottica_brand_name == "dolce & gabbana kids":
+            return "Dolce & Gabbana"
+        elif luxottica_brand_name == "emporio armani aids":
+            return "Emporio Armani"
+        elif luxottica_brand_name == "oakley frame" or luxottica_brand_name == "oakley youth rx" or luxottica_brand_name == "oakley youth sun":
+            return "Oakley"
+        elif luxottica_brand_name == "ray-ban junior" or luxottica_brand_name == "ray-ban junior vista" or luxottica_brand_name == "ray-ban vista":
+            return "Ray-Ban"
+        elif luxottica_brand_name == "versace kids":
+            return "Versace"
+        elif luxottica_brand_name == "vogue junior sun" or luxottica_brand_name == "vogue junior ophthal":
+            return "Vogue Eyewear"
+        return row["Brand Name"]
+
+    shared_file["Vendor"] = shared_file.apply(get_main_brand, axis=1)
 
     # SET ITEMS TITLE
     def get_items_title(row):
-        brand = row["Brand Name"].title()
+        brand = row["Vendor"].title()
         if row["Model Code"].startswith("0"):
             model_code = row["Model Code"].replace("0", "", 1)
         else:
@@ -60,59 +82,87 @@ def luxottica_shared_products():
             return f"{brand} {product_name} {model_code} {color_code}"
         else:
             return f"{brand} {model_code} {color_code}"
-    shared_file["Title"] = shared_file.apply(get_items_title, axis = 1)
 
-    # GET VENDOR
-    def shopify_vendor(row):
-        if row["Vendor"] == "Oakley frame" or row["Vendor"] == "Oakley youth rx" or row[
-            "Vendor"] == "Oakley youth sun" or row["Vendor"] == "Oakley Frame" or row["Vendor"] == "Oakley Youth Rx" or \
-                row[
-                    "Vendor"] == "Oakley Youth Sun":
-            return "Oakley"
-        elif row["Vendor"] == "Ray-ban junior vista" or row["Vendor"] == "Ray-ban vista" or row[
-            "Vendor"] == "Ray-Ban Junior" or row["Vendor"] == "Ray-Ban Vista" or row[
-            "Vendor"] == "Ray-Ban Junior Vista":
-            return "Ray-Ban"
-        elif row["Vendor"] == "Goggle&acc  snow" and row["Brand Code"] == "OZ":
-            return "Oakley"
-        elif row["Vendor"] == "Dolce & Gabbana Kids":
-            return "Dolce & Gabbana"
-        elif row["Vendor"] == "Emporio Armani Kids":
-            return "Emporio Armani"
-        elif row["Vendor"] == "Burberry Kids":
-            return "Burberry"
-        elif row["Vendor"] == "Vogue Junior Sun" or row["Vendor"] == "Vogue Junior Ophthal" or row["Vendor"] == "Vogue":
-            return "Vogue Eyewear"
-        elif row["Vendor"] == "Versace Kids":
-            return "Versace"
-        return row["Vendor"]
-    shared_file["Vendor"] = shared_file.apply(shopify_vendor, axis = 1)
+    shared_file["Title"] = shared_file.apply(get_items_title, axis=1)
 
-    # FRAME SHAPE
-    shared_file["Metafield: my_fields.frame_shape [single_line_text_field]"] = shared_file["Shape"]
+    # GET TYPE FROM LUXOTTICA FILE
+    shared_file["Type_looker"] = shared_file["Collection"]
+    # ================================================ PRICE & COST===========================================================
+    # GET RETAIL PRICE
+    shared_file["Variant Compare At Price"] = shared_file["Suggested Retail Price"]
 
-    # Set all qty as 5
+    # SET RIGHT FORMAT FOR RRP -> LUXOTTICA FILE IS WITH COMMA I NEED POINT
+    def get_right_format_for_compare_price(row):
+        retail_price = row["Variant Compare At Price"]
+        if isinstance(retail_price, str):
+            retail_price = retail_price.strip()
+            retail_price = retail_price.replace(".", "")
+            retail_price = retail_price.replace(",", ".")
+        return float(retail_price)
+
+    shared_file["Variant Compare At Price"] = shared_file.apply(get_right_format_for_compare_price, axis=1)
+
+    # REMOVE VARIANT PRICE -> WILL FILL WITH PRICE_QTY SCRIPT
+    shared_file["Variant Price"] = ""
+
+    # VARIANT COST
+    shared_file["Variant Cost"] = shared_file["Wholesale Price"].str.strip().str.replace(',', '.')
+    # =========================== MAPPATURA COLONNE DA FILE LUXOTTICA DOPO IL MERGE =====================
+    # All quantity as 5
     shared_file[[
         "Variant Inventory Qty", "Inventory Available: +39 05649689443"
     ]] = 5
 
-    # REPLACE , WITH . -> NOW WE CAN WORK ON EXCEL
-    shared_file["Variant Cost"] = shared_file["Variant Cost"].str.strip().str.replace(',', '.')
-    shared_file["Vendor"] = shared_file["Vendor"].str.title()
-
-    # LENS SIZE
+    # Size
     shared_file["Option1 Name"] = "Size"
     shared_file["Option1 Value"] = shared_file["Size"]
-    # ALLA COLONNA FOR WHO ASSEGNO LO STESSO VALORE DELLA COLONNA GENDER DEL FILE LUXOTTICA
-    shared_file["Metafield: my_fields.for_who [single_line_text_field]"] = shared_file["Gender"]
 
-    # REMOVE USELESS TYPES
-    mask_type = shared_file["Type_looker"].isin([
-        "Sunglasses", "Eyeglasses", "Sunglasses Kids", "Eyeglasses Kids", "Ski & Snowboard Goggles"
-    ])
-    shared_file = shared_file[mask_type]
+    # =========================================== FRAME ===========================================================
+    # Color, Shape, Material
+    shared_file["Metafield: my_fields.frame_color [single_line_text_field]"] = shared_file["Front Colour"]
+    shared_file["Metafield: my_fields.frame_shape [single_line_text_field]"] = shared_file["Shape"]
+    shared_file["Metafield: my_fields.frame_material [single_line_text_field]"] = shared_file["Front Material"]
 
-    # KEEPP COLUMNS
+    # =========================================== LENS ===========================================================
+    # Color, Material
+    shared_file["Metafield: my_fields.lens_color [single_line_text_field]"] = shared_file["Lens Color"]
+    shared_file["Metafield: my_fields.lens_material [single_line_text_field]"] = shared_file["Lens Material"]
+    # Technology
+    def get_lens_technology(row):
+        polar = str(row["Polarized"]).strip().lower()
+        photo = str(row["Photochromic"]).strip().lower()
+
+        lens_techno = []
+
+        if pd.notna(row["Photochromic"]):
+            lens_techno.append("Photochromic")
+        if pd.notna(row["Polarized"]):
+            lens_techno.append("Polarized")
+        if pd.isna(row["Photochromic"]) and pd.isna(row["Polarized"]):
+            lens_techno.append("Standard")
+
+        return ",".join(lens_techno)
+    shared_file["Metafield: my_fields.lens_technology [single_line_text_field]"] = shared_file.apply(get_lens_technology, axis=1)
+
+    # SIZE - BRIDGE - TEMPLES
+    def get_size_bridge_temples(row):
+        if pd.notna(row["Width Lens"]):
+            size = int(row["Width Lens"])
+        else:
+            size = ""
+        if pd.notna(row["Lens Height"]):
+            bridge = int(row["Lens Height"])
+        else:
+            bridge = ""
+        if pd.notna(row["Temple Length"]):
+            temples = int(row["Temple Length"])
+        else:
+            temples = ""
+
+        return f"{size}-{bridge}-{temples}"
+    shared_file["Metafield: my_fields.product_size [single_line_text_field]"] = shared_file.apply(get_size_bridge_temples, axis=1)
+
+    # ================================================== REMOVE LUXOTTICA FILE COLUMNS =================================
     column_to_keep = [
         "ID", "Handle", "Command", "Title", "Body HTML",
         "Vendor", "Type_looker", "Tags", "Tags Command",
@@ -134,19 +184,6 @@ def luxottica_shared_products():
     ]
     shared_file = shared_file[column_to_keep]
     shared_file = shared_file.rename(columns={"Type_looker": "Type"})
-
-    # On Gender doesn't exist Kids category
-    # Create Kids category based on "Type" row
-    def get_kids_category(row):
-        gender = str(row["Metafield: my_fields.for_who [single_line_text_field]"]).strip().title()
-        item_type = str(row["Type"]).strip().title()
-
-        kids_category = ["Sunglasses Kids", "Eyeglasses Kids"]
-
-        if item_type in kids_category:
-            return "Kids"
-        return gender
-    shared_file["Metafield: my_fields.for_who [single_line_text_field]"] = shared_file.apply(get_kids_category, axis=1)
 
     # ========================================= MAIN VALUES =========================================
 
@@ -172,6 +209,7 @@ def luxottica_shared_products():
 
     shared_file["Metafield: custom.main_lens_color [single_line_text_field]"] = shared_file.apply(get_main_lens_color,
                                                                                                   axis=1)
+
     # FRAME COLOR
     def get_main_frame_color(row):
         """Determino i colori madre per le montature"""
@@ -247,7 +285,8 @@ def luxottica_shared_products():
             else:
                 return "L"
         return ""
-    shared_file["Metafield: custom.main_size [single_line_text_field]"] = shared_file.apply(get_main_size, axis = 1 )
+
+    shared_file["Metafield: custom.main_size [single_line_text_field]"] = shared_file.apply(get_main_size, axis=1)
 
     # ======================================================= TAGS ====================================================
     # Get Correct Tags
@@ -295,7 +334,8 @@ def luxottica_shared_products():
 
     shared_file["Tags"] = shared_file.apply(get_tags, axis=1)
 
-    shared_file.to_excel("Shared_Product.xlsx", index=False)
+    # SAVE
+    shared_file.to_excel("Luxottica_shared_products.xlsx", index=False)
 
     luxottica_brands = shared_file["Vendor"].unique()
     for brand in luxottica_brands:
@@ -307,18 +347,15 @@ def luxottica_shared_products():
         except Exception as err:
             print(f"{type(err).__name__}: {err}")
 
-    shared_file.to_excel("Luxottica_shared_products.xlsx", index=False)
-    print("File saved successfully")
-
-
 if __name__ == "__main__":
     with open(luxottica_shared_products_log, "a") as file:
         current_time = datetime.datetime.now().strftime("%d-%m-%Y at %H:%M:%S")
         try:
             luxottica_shared_products()
+            print("Done")
             file.write(f"[{current_time}] Luxottica regular products are updated!\n")
-            print("Tutto ok")
         except Exception as err:
             file.write(f"[{current_time}] Luxottica regular products are not updated due this error:\n")
             file.write(f"{type(err).__name__}: {err}\n")
             print(f"{type(err).__name__}: {err}\n")
+
