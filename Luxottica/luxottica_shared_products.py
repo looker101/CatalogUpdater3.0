@@ -35,7 +35,9 @@ def luxottica_shared_products():
         indicator=True
     )
 
-    # =============================================== BRANDS NAME AND ITEMS TYPE =======================================
+    # ===============================================BARCODE BRANDS NAME AND ITEMS TYPE =======================================
+    # VARIANT BARCODE
+    shared_file["Variant Barcode"] = shared_file["UPC"]
     # GET KIDS CATEGORIES FROM LUXOTTICA BRAND NAME E.G. BURBERRY KIDS
     # IF KIDS, YOUTH, JUNIOR IN BRAND NAME, GENDER WILL BE KIDS
     def get_kids_gender(row):
@@ -48,14 +50,14 @@ def luxottica_shared_products():
 
     shared_file["Metafield: my_fields.for_who [single_line_text_field]"] = shared_file.apply(get_kids_gender, axis=1)
 
-    # FROM BRANND NAME COLUMN, REMOVE USELESS NAME AS KIDS, FRAME OR SOMETHING LIKE THIS
+    # FROM BRAND NAME COLUMN, REMOVE USELESS NAME AS KIDS, FRAME OR SOMETHING LIKE THIS
     def get_main_brand(row):
         luxottica_brand_name = str(row["Brand Name"]).strip().lower()
         if luxottica_brand_name == "burberry kids":
             return "Burberry"
         elif luxottica_brand_name == "dolce & gabbana kids":
             return "Dolce & Gabbana"
-        elif luxottica_brand_name == "emporio armani aids":
+        elif luxottica_brand_name == "emporio armani kids":
             return "Emporio Armani"
         elif luxottica_brand_name == "oakley frame" or luxottica_brand_name == "oakley youth rx" or luxottica_brand_name == "oakley youth sun":
             return "Oakley"
@@ -86,6 +88,21 @@ def luxottica_shared_products():
 
     shared_file["Title"] = shared_file.apply(get_items_title, axis=1)
 
+    # SET ITEMS SKU
+    def get_variant_sku(row):
+        model_code = row["Model Code"]
+        color_code = row["Color Code"]
+        size = row["Size"]
+        if model_code.startswith('0'):
+            # Rimuovi il primo carattere se è '0'
+            model_code = model_code[1:]
+        elif model_code.startswith('A'):
+            # Rimuovi il primo carattere se è 'A'
+            model_code = model_code[1:]
+        return f"{model_code} {color_code} {size}"
+
+    shared_file["Variant SKU"] = shared_file.apply(get_variant_sku, axis=1)
+
     # GET TYPE FROM LUXOTTICA FILE
     shared_file["Type_looker"] = shared_file["Collection"]
     # ================================================ PRICE & COST===========================================================
@@ -114,7 +131,7 @@ def luxottica_shared_products():
         "Variant Inventory Qty", "Inventory Available: +39 05649689443"
     ]] = 5
 
-    # Size
+    # Size -> Product Variants
     shared_file["Option1 Name"] = "Size"
     shared_file["Option1 Value"] = shared_file["Size"]
 
@@ -293,7 +310,9 @@ def luxottica_shared_products():
     # Get Correct Tags
     def get_tags(row):
         """Inserimento dei Tags"""
-        row["Tags"] = ""
+        # MANTENGO I TAG GIà PRESENTI
+        tag_esistenti = str(row["Tags"]).strip()
+        lista_tag_esistenti = [tag.strip() for tag in tag_esistenti.split(',')]
 
         tags_list = [
             str(row["Metafield: my_fields.for_who [single_line_text_field]"]) if pd.notna(
@@ -317,6 +336,14 @@ def luxottica_shared_products():
         ]
         # Se il tag all'interno della lista 'tags_list' NON è NaN e non é vuoto, allora ritorna il tag sottoforma di stringa e togli la virgola
         tags_list = [str(tag).replace(",", "") for tag in tags_list if pd.notna(tag) and str(tag).strip() != ""]
+
+        # SE NEI TAG PRECEDENTI è PRESENTE UNO DI QUESTI, METTILO NELLA NUOVA LISTA DEI TAGS
+        if "tag__new_New" in lista_tag_esistenti:
+            tags_list.append("tag__new_New")
+        if "tag__hot_Best Seller" in lista_tag_esistenti:
+            tags_list.append("tag__hot_Best Seller")
+        if "available now" in lista_tag_esistenti:
+            tags_list.append("available now")
 
         new = str(row["New"])
         best_seller = str(row["Best Seller"])
