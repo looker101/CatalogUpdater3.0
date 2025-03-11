@@ -8,6 +8,17 @@ from luxottica_paths import luxottica_backup, luxottica_item_master
 shopify_file = pd.read_excel(luxottica_backup)
 luxottica_file = pd.read_excel(luxottica_item_master)
 
+# PRIMA DI FARE IL MERGE, FILTRA ITEM MASTER DATA PER LE CATEGORIE NECESSARIE
+luxottica_file = luxottica_file[luxottica_file["Collection"].isin([
+    "Sunglasses", "Eyeglasses", "Sunglasses Kids", "Eyeglasses Kids", "Goggles&Helmets"
+])]
+luxottica_file["Collection"] = luxottica_file["Collection"].str.replace("Goggles&Helmets",
+                                                                        "Ski & Snowboard Goggles")
+
+# REPLACE "GOGGLE&ACC  SNOW" NAME BRAND WITH OAKLEY
+luxottica_file["Brand Name"] = luxottica_file["Brand Name"].str.replace("GOGGLE&ACC  SNOW", "OAKLEY")
+luxottica_file["Brand Name"] = luxottica_file["Brand Name"].str.strip().str.title()
+
 new_items = shopify_file.merge(
     luxottica_file,
     left_on="Variant Barcode",
@@ -20,60 +31,60 @@ new_items = shopify_file.merge(
 mask = new_items["_merge"] == "right_only"
 new_items = new_items[mask]
 
-# RENAME TYPE_LOOKER WITH TYPE
-new_items = new_items.rename(columns={"Type_shopify":"Type"})
-
-# SET VENDOR
-# ALL VENDOR VALUE MUST HAVE ONLY BRAND NAME AS TITLE()
-new_items["Vendor"] = new_items["Brand Name"].str.title()
-
-def shopify_vendor(row):
-    if row["Vendor"] == "Oakley frame" or row["Vendor"] == "Oakley youth rx" or row[
-        "Vendor"] == "Oakley youth sun" or row["Vendor"] == "Oakley Frame" or row["Vendor"] == "Oakley Youth Rx" or row[
-        "Vendor"] == "Oakley Youth Sun":
-        return "Oakley"
-    elif row["Vendor"] == "Ray-ban junior vista" or row["Vendor"] == "Ray-ban vista" or row[
-        "Vendor"] == "Ray-Ban Junior" or row["Vendor"] == "Ray-Ban Vista" or row[
-        "Vendor"] == "Ray-Ban Junior Vista":
-        return "Ray-Ban"
-    elif row["Vendor"] == "Goggle&acc  snow" and row["Brand Code"] == "OZ":
-        return "Oakley"
-    elif row["Vendor"] == "Dolce & Gabbana Kids":
-        return "Dolce & Gabbana"
-    elif row["Vendor"] == "Emporio Armani Kids":
-        return "Emporio Armani"
-    elif row["Vendor"] == "Burberry Kids":
-        return "Burberry"
-    elif row["Vendor"] == "Vogue Junior Sun" or row["Vendor"] == "Vogue Junior Ophthal" or row["Vendor"] == "Vogue":
-        return "Vogue Eyewear"
-    elif row["Vendor"] == "Versace Kids":
-        return "Versace"
-    return row["Vendor"]
-
-
-new_items["Vendor"] = new_items.apply(shopify_vendor, axis=1)
-
-new_items["Command"] = "MERGE"
-#new_items["Tags"] = "New"
-new_items["Tags Command"] = "REPLACE"
-new_items["Status"] = "ACTIVE"
+# ========================================== FILL COLUMNS ==========================================
+# TEMPLATE SUFFIX AS "Default product"
 new_items["Template Suffix"] = "Default product"
+
+# Size -> Product Variants
 new_items["Option1 Name"] = "Size"
-new_items["Option1 Value"] = new_items["Width Lens"]
-new_items["Variant Compare At Price"] = new_items["Wholesale Price"]
-new_items["Variant Price"] = new_items["Suggested Retail Price"]
-new_items[["Variant Inventory Qty", "Inventory Available: +39 05649689443"]] = 0
-new_items["Type"] = new_items["Collection"]
-new_items["Metafield: my_fields.lens_color [single_line_text_field]"] = new_items["Lens Color"]
-new_items["Metafield: my_fields.frame_color [single_line_text_field]"] = new_items["Front Colour"]
-new_items["Metafield: my_fields.frame_shape [single_line_text_field]"] = new_items["Shape"]
-#new_items["Metafield: my_fields.for_who [single_line_text_field]"] = new_items["Gender"]
-new_items["Metafield: my_fields.frame_material [single_line_text_field]"] = new_items["Front Material"]
+new_items["Option1 Value"] = new_items["Size"]
+
+# =============================================== BARCODE BRANDS NAME, ITEMS TITLE, SKU AND ITEMS TYPE =======================================
+# VARIANT BARCODE
 new_items["Variant Barcode"] = new_items["UPC"]
 
-# SET ITEMS TITLE
+
+# GET KIDS CATEGORIES FROM LUXOTTICA BRAND NAME E.G. BURBERRY KIDS
+# IF KIDS, YOUTH, JUNIOR IN BRAND NAME, GENDER WILL BE KIDS
+def get_kids_gender(row):
+    brand_name = str(row["Brand Name"]).strip().lower()
+    kids_category = ["kids", "youth", "junior"]
+    for category in kids_category:
+        if category in brand_name:
+            return "Kids"
+    return row["Gender"]
+
+
+new_items["Metafield: my_fields.for_who [single_line_text_field]"] = new_items.apply(get_kids_gender, axis=1)
+
+
+# FROM BRANND NAME COLUMN, REMOVE USELESS NAME AS KIDS, FRAME OR SOMETHING LIKE THIS
+def get_main_brand(row):
+    luxottica_brand_name = str(row["Brand Name"]).strip().lower()
+    if luxottica_brand_name == "burberry kids":
+        return "Burberry"
+    elif luxottica_brand_name == "dolce & gabbana kids":
+        return "Dolce & Gabbana"
+    elif luxottica_brand_name == "emporio armani kids":
+        return "Emporio Armani"
+    elif luxottica_brand_name == "oakley frame" or luxottica_brand_name == "oakley youth rx" or luxottica_brand_name == "oakley youth sun":
+        return "Oakley"
+    elif luxottica_brand_name == "ray-ban junior" or luxottica_brand_name == "ray-ban junior vista" or luxottica_brand_name == "ray-ban vista":
+        return "Ray-Ban"
+    elif luxottica_brand_name == "versace kids":
+        return "Versace"
+    elif luxottica_brand_name == "vogue junior sun" or luxottica_brand_name == "vogue junior ophthal":
+        return "Vogue Eyewear"
+    return row["Brand Name"]
+
+
+new_items["Brand Name"] = new_items.apply(get_main_brand, axis=1)
+new_items["Vendor"] = new_items["Brand Name"]
+
+
+# ITEMS TITLE
 def get_items_title(row):
-    brand = row["Brand Name"].title()
+    brand = row["Vendor"].title()
     if row["Model Code"].startswith("0"):
         model_code = row["Model Code"].replace("0", "", 1)
     else:
@@ -84,6 +95,7 @@ def get_items_title(row):
         return f"{brand} {product_name} {model_code} {color_code}"
     else:
         return f"{brand} {model_code} {color_code}"
+
 new_items["Title"] = new_items.apply(get_items_title, axis=1)
 
 # SET ITEMS SKU
@@ -100,96 +112,125 @@ def get_variant_sku(row):
     return f"{model_code} {color_code} {size}"
 new_items["Variant SKU"] = new_items.apply(get_variant_sku, axis=1)
 
-# SET ITEMS TYPE
-def get_items_type(row):
-    items_type = str(row["Collection"]).strip().title()
-    if pd.notna(items_type):
-        if row["Collection"] == "Goggles&Helmets":
-            return "Ski & Snowboard Goggles"
-        return row["Collection"]
-new_items["Type"] = new_items.apply(get_items_type, axis=1)
-
-# KEEP ITEMS TYPE -> THESE TYPE ARE LUXOTTICA DEFAULT
-mask_type = new_items["Type"].isin(["Eyeglasses", "Eyeglasses Kids",
-                                    "Sunglasses", "Sunglasses Kids",
-                                    "Ski & Snowboard Goggles"])
-new_items = new_items[mask_type]
-
-# GET GENDER AND KIDS TYPE -> GET KIDS ON 'FOR WHO' FIELD THROUGHT ITEMS TYPE
-def get_gender_and_kids_type(row):
-    items_type = str(row["Type"]).strip().title()
-    items_gender = str(row["Gender"]).strip().title()
-    if "Kids" in items_type:
-        return "Kids"
-    return items_gender
-new_items["Metafield: my_fields.for_who [single_line_text_field]"] = new_items.apply(get_gender_and_kids_type, axis = 1)
+# ITEMS TYPE: SHOPIFY TYPE == LUXOTTICA COLLECTION
+new_items["Type_shopify"] = new_items["Collection"]
+# ================================================ PRICE & COST===========================================================
+# GET RETAIL PRICE
+new_items["Variant Compare At Price"] = new_items["Suggested Retail Price"]
 
 
-# KEEP COLUMNS
-columns_to_keep = [
-    "ID", "Handle", "Command", "Title", "Body HTML", "Vendor", "Type", "Tags", "Tags Command", "Status",
-    "Template Suffix", "URL", "Image Src", "Variant ID", "Option1 Name", "Option1 Value", "Variant SKU",
-    "Variant Barcode", "Variant Price", "Variant Compare At Price", "Variant Inventory Qty",
-    "Inventory Available: +39 05649689443", "Metafield: my_fields.for_who [single_line_text_field]",
+# SET RIGHT FORMAT FOR RRP -> LUXOTTICA FILE IS WITH COMMA I NEED POINT
+def get_right_format_for_compare_price(row):
+    retail_price = row["Variant Compare At Price"]
+    if isinstance(retail_price, str):
+        retail_price = retail_price.strip()
+        retail_price = retail_price.replace(".", "")
+        retail_price = retail_price.replace(",", ".")
+    return float(retail_price)
+
+
+new_items["Variant Compare At Price"] = new_items.apply(get_right_format_for_compare_price, axis=1)
+
+# ============================================= QUANTITY ======================================================
+new_items[[
+    "Variant Inventory Qty", "Inventory Available: +39 05649689443"
+]] = 0
+
+# =========================================== FRAME ===========================================================
+# Color, Shape, Material
+new_items["Metafield: my_fields.frame_color [single_line_text_field]"] = new_items["Front Colour"]
+new_items["Metafield: my_fields.frame_shape [single_line_text_field]"] = new_items["Shape"]
+new_items["Metafield: my_fields.frame_material [single_line_text_field]"] = new_items["Front Material"]
+
+# =========================================== LENS ===========================================================
+# Color, Material
+new_items["Metafield: my_fields.lens_color [single_line_text_field]"] = new_items["Lens Color"]
+new_items["Metafield: my_fields.lens_material [single_line_text_field]"] = new_items["Lens Material"]
+
+
+# Technology
+def get_lens_technology(row):
+    polar = str(row["Polarized"]).strip().lower()
+    photo = str(row["Photochromic"]).strip().lower()
+
+    lens_techno = []
+
+    if pd.notna(row["Photochromic"]):
+        lens_techno.append("Photochromic")
+    if pd.notna(row["Polarized"]):
+        lens_techno.append("Polarized")
+    if pd.isna(row["Photochromic"]) and pd.isna(row["Polarized"]):
+        lens_techno.append("Standard")
+
+    return ",".join(lens_techno)
+
+
+new_items["Metafield: my_fields.lens_technology [single_line_text_field]"] = new_items.apply(get_lens_technology,
+                                                                                             axis=1)
+
+
+# SIZE - BRIDGE - TEMPLES
+def get_size_bridge_temples(row):
+    if pd.notna(row["Width Lens"]):
+        size = int(row["Width Lens"])
+    else:
+        size = ""
+    if pd.notna(row["Lens Height"]):
+        bridge = int(row["Lens Height"])
+    else:
+        bridge = ""
+    if pd.notna(row["Temple Length"]):
+        temples = int(row["Temple Length"])
+    else:
+        temples = ""
+
+    return f"{size}-{bridge}-{temples}"
+
+
+new_items["Metafield: my_fields.product_size [single_line_text_field]"] = new_items.apply(get_size_bridge_temples,
+                                                                                          axis=1)
+
+# ================================================== TAGS ==================================================
+# Insert only "new"
+def get_tags(row):
+    new = str(row["New"])
+    best_seller = str(row["Best Seller"])
+
+    tags_list = []
+
+    if pd.notna(new) and new == "X":
+        tags_list.append("tag__new_New")
+    if pd.notna(best_seller) and best_seller == "X":
+        tags_list.append("tag__hot_Best Seller")
+
+    return ",".join(tags_list)
+new_items["Tags"] = new_items.apply(get_tags, axis=1)
+
+# Tags Command
+new_items["Tags Command"] = "REPLACE"
+
+# ================================================== REMOVE LUXOTTICA FILE COLUMNS =================================
+column_to_keep = [
+    "ID", "Handle", "Command", "Title", "Body HTML",
+    "Vendor", "Type_looker", "Tags", "Tags Command",
+    "Status", "Template Suffix", "URL", "Variant ID", "Variant SKU",
+    "Variant Barcode", "Option1 Name", "Option1 Value", "Variant Price",
+    "Variant Compare At Price",
+    "Variant Inventory Qty", "Inventory Available: +39 05649689443",
+    "Metafield: title_tag [string]", "Metafield: description_tag [string]",
     "Metafield: my_fields.lens_color [single_line_text_field]",
     "Metafield: my_fields.frame_color [single_line_text_field]",
     "Metafield: my_fields.frame_shape [single_line_text_field]",
     "Metafield: my_fields.frame_material [single_line_text_field]",
-    "Metafield: my_fields.product_size [single_line_text_field]"
+    "Metafield: my_fields.lens_technology [single_line_text_field]",
+    "Metafield: my_fields.lens_material [single_line_text_field]",
+    "Metafield: my_fields.product_size [single_line_text_field]",
+    "Metafield: my_fields.gtin1 [single_line_text_field]",
+    "Metafield: my_fields.for_who [single_line_text_field]"
+    #"New", "Best Seller", "Advertising"
 ]
-new_items = new_items[columns_to_keep]
-
-# =========================SAVE======================
-
-new_items["Variant Barcode"] = new_items["Variant Barcode"].apply(
-        lambda x: str(int(float(x))) if pd.notna(x) and x != "" else "")
-
-# Imposta il numero di barcode per file
-barcode_per_file = 248
-total_barcodes = len(new_items)
-file_index = 1
-
-# Itera attraverso i barcode in blocchi
-for i in range(0, total_barcodes, barcode_per_file):
-    # Estrai un blocco di 250 barcode
-    barcode_chunk = new_items["Variant Barcode"].iloc[i:i + barcode_per_file]
-
-    # Salva il blocco in un file
-    filename = f"barcode{file_index}.txt"
-    with open(filename, "w") as file:
-        for barcode in barcode_chunk:
-            if barcode:  # Scrivi solo se non è vuoto
-                file.write(f"{barcode.strip()}\n")
-
-    print(f"{filename} created!.")
-    file_index += 1
-print("txt files are create successfully!")
-
-# Split brands and save them on own folder
-# Save all file on this directory
-for brand in new_items["Vendor"].unique():
-    try:
-        mask = new_items["Vendor"] == brand
-        brand_file = new_items[mask]
-        brand_file = brand_file.sort_values(by="Title")
-        brand_file.to_excel(
-            f"/var/www/vhosts/lookeronline.com/staging.lookeronline.com/script/Catalog/Luxottica/{brand}/{brand}_IMG.xlsx",
-            index=False)
-        print(f"{brand} brand saved successfully on own folder.")
-        #brand_file.to_excel(
-        #    f"/var/www/vhosts/lookeronline.com/staging.lookeronline.com/script/Catalog/To_Import/New/{brand}_NEW.xlsx",
-        #    index=False)
-        #print(f"{brand} brand saved successfully on NEW folder.")
-        time.sleep(1)
-    except Exception as err:
-        print("Something went wrong during saving files.")
-        print(f"{type(err).__name__}: \n {err}")
-
-new_items.to_excel("Luxottica_New_Products.xlsx", index=False)
-
-
-# if __name__ == "__main__":
-#     try:
-#         new_products()
-#     except Exception as err:
-#         print(f"{type(err).__name__}: {err}")
+new_items = new_items[column_to_keep]
+new_items = new_items.rename(columns={"Type_looker": "Type"})
+# ========================================== SAVE ==========================================
+new_items = new_items.sort_values(by="Title")
+new_items.to_excel("ProvaNuovi.xlsx", index=False)
