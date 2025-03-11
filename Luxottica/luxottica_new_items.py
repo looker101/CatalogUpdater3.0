@@ -232,6 +232,53 @@ column_to_keep = [
 new_items = new_items[column_to_keep]
 new_items = new_items.rename(columns={"Type_looker": "Type"})
 
+# ======================================== CREATING TXT FILE WITH NEW ITEMS BARCODE ================================
+# Create a txt file with all barcode to import on Luxottica to get pictures
+print("Create a txt file with all barcode to import on Luxottica to get pictures")
+new_items["Variant Barcode"] = new_items["Variant Barcode"].apply(
+    lambda x: str(int(float(x))) if pd.notna(x) and x != "" else "")
+
+# Imposta il numero di barcode per file
+barcode_per_file = 248
+total_barcodes = len(new_items)
+file_index = 1
+
+# Itera attraverso i barcode in blocchi
+for i in range(0, total_barcodes, barcode_per_file):
+    # Estrai un blocco di 250 barcode
+    barcode_chunk = new_items["Variant Barcode"].iloc[i:i + barcode_per_file]
+
+    # Salva il blocco in un file
+    filename = f"barcode{file_index}.txt"
+    with open(filename, "w") as file:
+        for barcode in barcode_chunk:
+            if barcode:  # Scrivi solo se non è vuoto
+                file.write(f"{barcode.strip()}\n")
+
+    print(f"{filename} created!.")
+    file_index += 1
+print("txt files are create successfully!")
+
+# Split brands and save them on own folder
+# Save all file on this directory
+for brand in new_items["Vendor"].unique():
+    try:
+        mask = new_items["Vendor"] == brand
+        brand_file = new_items[mask]
+        brand_file = brand_file.sort_values(by="Title")
+        brand_file.to_excel(
+            f"/var/www/vhosts/lookeronline.com/staging.lookeronline.com/script/Catalog/Luxottica/{brand}/{brand}_IMG.xlsx",
+            index=False)
+        print(f"{brand} brand saved successfully on own folder.")
+        # brand_file.to_excel(
+        #     f"/var/www/vhosts/lookeronline.com/staging.lookeronline.com/script/Catalog/To_Import/New/{brand}_NEW.xlsx",
+        #     index=False)
+        # print(f"{brand} brand saved successfully on NEW folder.")
+        time.sleep(1)
+    except Exception as err:
+        print("Something went wrong during saving files.")
+        print(f"{type(err).__name__}: \n {err}")
+
 # ========================================== SAVE ==========================================
 
 new_items = new_items.sort_values(by="Title")
