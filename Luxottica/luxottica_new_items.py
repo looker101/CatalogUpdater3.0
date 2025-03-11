@@ -231,6 +231,8 @@ column_to_keep = [
 ]
 new_items = new_items[column_to_keep]
 new_items = new_items.rename(columns={"Type_looker": "Type"})
+
 # ========================================== SAVE ==========================================
+
 new_items = new_items.sort_values(by="Title")
-new_items.to_excel("ProvaNuovi.xlsx", index=False)
+new_items.to_excel("Luxottica_New_Products.xlsx", index=False)
