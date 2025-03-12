@@ -18,7 +18,7 @@ class Dragon(BaseBrand):
         self.quantity_0_items()
         self.get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
+
         self._df.to_excel(f"{DRAGON_FOLDER_FTP}/Dragon_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{price_quantity}/Dragon_price_quantity.xlsx", index=False)
 

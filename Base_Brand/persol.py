@@ -17,7 +17,7 @@ class Persol(BaseBrand):
         self.apply_discount(0.9) #AveMaria-Luxottica brand
         self.quantity_0_items()
         self.get_options_variants()
-        self.save_price_and_quantity_file()
+
         self._df.to_excel(f"{persol_folder}/Persol_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{lux_price_and_quantity}/Persol_price_quantity.xlsx", index=False)
 

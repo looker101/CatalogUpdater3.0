@@ -21,7 +21,7 @@ class Max_Co(BaseBrand):
         self.quantity_0_items()
         self.get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
+
         self._df.to_excel(f"{max_co_folder}/max_co_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{price_quantity}/max_co_price_quantity.xlsx", index=False)
 

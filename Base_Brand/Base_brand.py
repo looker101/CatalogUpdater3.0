@@ -87,12 +87,12 @@ class BaseBrand:
     # GEMINI
     # File with quantity
     # File with prices
-    def save_price_and_quantity_file(self):
-        price_file = self._df[[
-            "Variant SKU", "Variant Price", "Variant Compare At Price"
-        ]]
-        qty_file = self._df[[
-            "Variant SKU", "Variant Inventory Qty", "Inventory Available: +39 05649689443"
-        ]]
-        price_file.to_csv(f"{gemini_folder}/{self.__class__.__name__}_price.csv", index=False)
-        qty_file.to_csv(f"{gemini_folder}/{self.__class__.__name__}_qty.csv", index=False)
+    # def save_price_and_quantity_file(self):
+    #     price_file = self._df[[
+    #         "Variant SKU", "Variant Price", "Variant Compare At Price"
+    #     ]]
+    #     qty_file = self._df[[
+    #         "Variant SKU", "Variant Inventory Qty", "Inventory Available: +39 05649689443"
+    #     ]]
+    #     price_file.to_csv(f"{gemini_folder}/{self.__class__.__name__}_price.csv", index=False)
+    #     qty_file.to_csv(f"{gemini_folder}/{self.__class__.__name__}_qty.csv", index=False)

@@ -18,7 +18,7 @@ class Ray_Ban(BaseBrand):
         self.quantity_0_items()
         self.get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
+
         self._df.to_excel(f"{ray_ban_folder}/Ray-Ban_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{lux_price_and_quantity}/Ray-Ban_price_quantity.xlsx", index=False)
 

@@ -24,7 +24,6 @@ class Adidas_Originals(BaseBrand):
         self.quantity_0_items()
         self.get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
         self._df.to_excel(f"{adidas_originals_folder}/Adidas_Originals_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{price_quantity}/Adidas_Originals_price_quantity.xlsx", index=False)
 

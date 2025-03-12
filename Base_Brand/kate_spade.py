@@ -21,7 +21,7 @@ class Kate_Spade(BaseBrand):
         self.quantity_0_items()
         self.safilo_get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
+
         self._df.to_excel(f"{kate_spade_folder}/KateSpade_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{price_quantity}/KateSpade_price_quantity.xlsx", index=False)
 

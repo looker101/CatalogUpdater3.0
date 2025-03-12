@@ -18,7 +18,7 @@ class Miu_Miu(BaseBrand):
         self.quantity_0_items()
         self.get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
+
         self._df.to_excel(f"{miumiu_folder}/MiuMiu_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{lux_price_and_quantity}/MiuMiu_price_quantity.xlsx", index=False)
 

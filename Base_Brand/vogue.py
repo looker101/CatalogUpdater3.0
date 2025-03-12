@@ -18,7 +18,6 @@ class Vogue(BaseBrand):
         self.quantity_0_items()
         self.get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
         self._df.to_excel(f"{vogue_folder}/Vogue_Eyewear_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{lux_price_and_quantity}/Vogue_Eyewear_price_quantity.xlsx", index=False)
 

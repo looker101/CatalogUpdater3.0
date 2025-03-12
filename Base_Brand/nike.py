@@ -21,7 +21,7 @@ class Nike(BaseBrand):
         self.quantity_0_items()
         self.get_options_variants()
         self.sort_by_handle()
-        self.save_price_and_quantity_file()
+
         self._df.to_excel(f"{NIKE_FOLDER_FTP}/Nike_price_quantity.xlsx", index=False)
         self._df.to_excel(f"{price_quantity}/Nike_price_quantity.xlsx", index=False)
 
