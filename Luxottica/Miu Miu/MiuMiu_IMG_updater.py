@@ -18,13 +18,13 @@ def get_miu_miu_images():
         "Variant Inventory Qty", "Inventory Available: +39 05649689443", "Metafield: my_fields.lens_color [single_line_text_field]",
         "Metafield: my_fields.frame_color [single_line_text_field]", "Metafield: my_fields.frame_shape [single_line_text_field]",
         "Metafield: my_fields.frame_material [single_line_text_field]", "Metafield: my_fields.product_size [single_line_text_field]",
-        "Metafield: my_fields.for_who [single_line_text_field]", "Option1 Name", "Option1 Value",
-        "Metafield: custom.main_frame_shape [single_line_text_field]",
-        "Metafield: custom.main_frame_material [single_line_text_field]",
-        "Metafield: custom.main_frame_color [single_line_text_field]",
-        "Metafield: custom.main_lens_color [single_line_text_field]",
-        "Metafield: custom.main_lens_technology [single_line_text_field]",
-        "Metafield: custom.main_size [single_line_text_field]"
+        "Metafield: my_fields.for_who [single_line_text_field]", "Option1 Name", "Option1 Value"
+        # "Metafield: custom.main_frame_shape [single_line_text_field]",
+        # "Metafield: custom.main_frame_material [single_line_text_field]",
+        # "Metafield: custom.main_frame_color [single_line_text_field]",
+        # "Metafield: custom.main_lens_color [single_line_text_field]",
+        # "Metafield: custom.main_lens_technology [single_line_text_field]",
+        # "Metafield: custom.main_size [single_line_text_field]"
     ]]
 
     df["Image Alt Text"] = df["Vendor"] + ' ' + df["Variant SKU"]
@@ -68,13 +68,13 @@ def get_miu_miu_images():
     df["Image Src"] = df.apply(generate_image_urls, axis=1)
 
 
-    def count_imageSrc(row):
-        tags_cleaned = pd.Series(row["Tags"]).str.replace(r'spinimages=\d+,', '', regex=True).values[0]
-        images = row["Image Src"].split(";")
-        n_images = len(images)
-        return f"{tags_cleaned}, spinimages={n_images}"
-
-    df["Tags"] = df.apply(count_imageSrc, axis=1)
+    # def count_imageSrc(row):
+    #     tags_cleaned = pd.Series(row["Tags"]).str.replace(r'spinimages=\d+,', '', regex=True).values[0]
+    #     images = row["Image Src"].split(";")
+    #     n_images = len(images)
+    #     return f"{tags_cleaned}, spinimages={n_images}"
+    #
+    # df["Tags"] = df.apply(count_imageSrc, axis=1)
 
     df["Image Src"] = df["Image Src"].replace("", pd.NA)
     df = df.dropna(how='any', axis=0, subset=["Image Src"])
