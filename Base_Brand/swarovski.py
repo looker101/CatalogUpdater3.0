@@ -19,8 +19,8 @@ class Swarovski(BaseBrand):
         self.get_options_variants()
         self.sort_by_handle()
 
-        self._df.to_excel(f"{swarovski_folder}/Tiffany_price_quantity.xlsx", index=False)
-        self._df.to_excel(f"{lux_price_and_quantity}/Tiffany_price_quantity.xlsx", index=False)
+        self._df.to_excel(f"{swarovski_folder}/Swarovski_price_quantity.xlsx", index=False)
+        self._df.to_excel(f"{lux_price_and_quantity}/Swarovski_price_quantity.xlsx", index=False)
 
 swarovski = Swarovski(swarovski_update)
 
