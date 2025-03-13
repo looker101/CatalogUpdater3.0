@@ -4,3 +4,4 @@ venv/
 *.xml
 __pycache__
 .idea
+*.xlsx
