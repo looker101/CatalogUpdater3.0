@@ -40,8 +40,12 @@ def police_update():
         brand = row["Vendor"]
         model_code = row["Variant SKU"].split()[0]
         color_code = row["Variant SKU"].split()[1]
-        style = row["Type"].lower()
-        return f"{brand} {model_code} {color_code} {style} for Men and Women"
+        style = row["Type"]
+        if row["Metafield: my_fields.for_who [single_line_text_field]"] == "Unisex":
+            gender = "Men and Women"
+        else:
+            gender = row["Metafield: my_fields.for_who [single_line_text_field]"]
+        return f"{brand} {model_code} {color_code} {style} for {gender}"
 
 
     police["Metafield: title_tag [string]"] = police.apply(get_meta_title, axis=1)
@@ -53,7 +57,11 @@ def police_update():
         model_code = row["Variant SKU"].split()[0]
         color_code = row["Variant SKU"].split()[1]
         style = row["Type"].lower()
-        return f"New {brand} {model_code} {color_code} men and women {style} on sale! ✓ Express Shipping ✓ 100% Original and Authentic"
+        if row["Metafield: my_fields.for_who [single_line_text_field]"] == "Unisex":
+            gender = "Men and Women"
+        else:
+            gender = row["Metafield: my_fields.for_who [single_line_text_field]"]
+        return f"New {brand} {model_code} {color_code} for {gender} {style} on sale! ✓ Express Shipping ✓ 100% Original and Authentic"
 
 
     police["Metafield: description_tag [string]"] = police.apply(get_meta_description, axis=1)

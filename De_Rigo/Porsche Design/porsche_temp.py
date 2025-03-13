@@ -47,8 +47,12 @@ def porsche_update():
             frame_color = "Sport"
         else:
             frame_color = row["Metafield: my_fields.frame_color [single_line_text_field]"]
+        if row["Metafield: my_fields.for_who [single_line_text_field]"] == "Unisex":
+            gender = "Men and Women"
+        else:
+            gender = row["Metafield: my_fields.for_who [single_line_text_field]"]
         style = row["Type"]
-        return f"{brand} {model_code} {color_code} - {frame_color} {style} for Men and Women"
+        return f"{brand} {model_code} {color_code} - {frame_color} {style} for {gender}"
     porsche["Metafield: title_tag [string]"] = porsche.apply(get_meta_title, axis=1)
 
     # MetaDescriptiom
@@ -58,7 +62,11 @@ def porsche_update():
         model_code = row["Variant SKU"].split()[0]
         color_code = row["Variant SKU"].split()[1]
         style = row["Type"].lower()
-        return f"New {brand} {model_code} {color_code} men and women {style} on sale! ✓ Express Shipping ✓ 100% Original and Authentic"
+        if row["Metafield: my_fields.for_who [single_line_text_field]"] == "Unisex":
+            gender = "Men and Women"
+        else:
+            gender = row["Metafield: my_fields.for_who [single_line_text_field]"]
+        return f"New {brand} {model_code} {color_code} for {gender} {style} on sale! ✓ Express Shipping ✓ 100% Original and Authentic"
     porsche["Metafield: description_tag [string]"] = porsche.apply(get_meta_description, axis=1)
 
     # Product Title
