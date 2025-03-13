@@ -24,7 +24,7 @@ new_items = shopify_file.merge(
     left_on="Variant Barcode",
     right_on="UPC",
     how="right",
-    suffixes=("_shopify", "_looker"),
+    suffixes=("_shopify", "_luxottica"),
     indicator=True
 )
 
@@ -58,7 +58,7 @@ def get_kids_gender(row):
 new_items["Metafield: my_fields.for_who [single_line_text_field]"] = new_items.apply(get_kids_gender, axis=1)
 
 
-# FROM BRANND NAME COLUMN, REMOVE USELESS NAME AS KIDS, FRAME OR SOMETHING LIKE THIS
+# FROM BRAND NAME COLUMN, REMOVE USELESS NAME AS KIDS, FRAME OR SOMETHING LIKE THIS
 def get_main_brand(row):
     luxottica_brand_name = str(row["Brand Name"]).strip().lower()
     if luxottica_brand_name == "burberry kids":
@@ -130,6 +130,7 @@ def get_right_format_for_compare_price(row):
 
 
 new_items["Variant Compare At Price"] = new_items.apply(get_right_format_for_compare_price, axis=1)
+new_items["Variant Price"] = new_items["Variant Compare At Price"]
 
 # ============================================= QUANTITY ======================================================
 new_items[[
@@ -212,7 +213,7 @@ new_items["Tags Command"] = "REPLACE"
 # ================================================== REMOVE LUXOTTICA FILE COLUMNS =================================
 column_to_keep = [
     "ID", "Handle", "Command", "Title", "Body HTML",
-    "Vendor", "Type_looker", "Tags", "Tags Command",
+    "Vendor", "Type_shopify", "Tags", "Tags Command",
     "Status", "Template Suffix", "URL", "Variant ID", "Variant SKU",
     "Variant Barcode", "Option1 Name", "Option1 Value", "Variant Price",
     "Variant Compare At Price",
@@ -230,7 +231,7 @@ column_to_keep = [
     #"New", "Best Seller", "Advertising"
 ]
 new_items = new_items[column_to_keep]
-new_items = new_items.rename(columns={"Type_looker": "Type"})
+new_items = new_items.rename(columns={"Type_shopify": "Type"})
 
 # ======================================== CREATING TXT FILE WITH NEW ITEMS BARCODE ================================
 # Create a txt file with all barcode to import on Luxottica to get pictures
